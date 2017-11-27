@@ -107,6 +107,12 @@ package componentsRISC is
 		  OUTPUT_ALU : out std_logic_vector(15 downto 0);
 		  carry_ALU,zero_ALU : out std_logic);
 	end component;
+
+	component alu_adder is
+	port (D1,D2 : in std_logic_vector(15 downto 0);
+		OUTPUT: out std_logic_vector(15 downto 0));
+	end component;
+
 	
 end package;
 ---------------------------------------------------------
@@ -130,7 +136,7 @@ architecture behave of dregister is
 begin  -- behave
 process(clk)
 begin
-if(reset = '1')
+if(reset = '1') then
   dout <= "0000000000000000";
   else if(clk'event and clk = '1') then
     if en = '1' then
@@ -161,7 +167,7 @@ architecture behave of dflipflop is
 begin  -- behave
 process(clk)
 begin
-if (reset = '1')
+if (reset = '1') then
   dout <= "0000000000000000";
   else if(clk'event and clk = '1') then
     if en = '1' then
@@ -667,7 +673,27 @@ end process;
 OUTPUT_ALU <= OUTPUT_ALU_TEMP;
 end behave;
 
+-----------------------------------------------------------
+library std;
+use std.standard.all;
 
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+-----------------------------------------------
+
+entity alu_adder is
+	port (D1,D2 : in std_logic_vector(15 downto 0);
+		OUTPUT: out std_logic_vector(15 downto 0));
+end entity;
+
+architecture behave of alu_adder is
+begin
+process(D1,D2)
+begin
+OUTPUT <= std_logic_vector(signed(D1)+signed(D2));
+end process;
+end behave;
 ------------------------------------
 library ieee;
 use ieee.numeric_bit.all;
