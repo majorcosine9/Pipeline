@@ -650,33 +650,26 @@ entity alu is
 end entity;
 
 architecture behave of alu is 
-	signal OUTPUT_ALU_TEMP, OUTPUT_ALU_TEMP2 : std_logic_vector(15 downto 0);
+	signal OUTPUT_ALU_TEMP : std_logic_vector(15 downto 0);
 -----------------------------------------------			
 begin 
 
---zero_ALU <= '1' when ((std_logic_vector(signed(X) + signed(Y))="0000000000000000")
---	or (X nand Y = "0000000000000000")) else '0';
---carry_ALU <= '1' when ((X(15)=Y(15)) and X(15)=)
---zero_ALU  <= '1' when OUTPUT_ALU_TEMP = "0000000000000000" else '0';
---carry_ALU <= '1' ; --if () else '0';   -- Add condition
+zero_ALU  <= '1' when OUTPUT_ALU_TEMP = "0000000000000000" else '0';
+carry_ALU <= '1' ; --if () else '0';   -- Add condition
 
 ------------------------------
---process(op_code_bits, X, Y)
---begin
+process(op_code_bits, X, Y)
+begin
 --if (op_code_bits = "0000") then               -- 00-ADD, modify Z and C
-OUTPUT_ALU_TEMP <= std_logic_vector(signed(X) + signed(Y));
-carry_ALU <= '1' when ((X(15)=Y(15)) and X(15)/=OUTPUT_ALU_TEMP(15)) else '0';
-OUTPUT_ALU_TEMP2(15) <= not OUTPUT_ALU_TEMP(15) when ((X(15)=Y(15)) and X(15)/=OUTPUT_ALU_TEMP(15))
-	else OUTPUT_ALU_TEMP(15);
-OUTPUT_ALU_TEMP2(14 downto 0) <= OUTPUT_ALU_TEMP(14 downto 0);
+OUTPUT_ALU_TEMP<= std_logic_vector(signed(X) + signed(Y));
 
-zero_ALU <= '1' when (OUTPUT_ALU_TEMP2="0000000000000000") else '0';
---if(op_code_bits = "0010")then           -- 10-NAND, modify Z
---OUTPUT_ALU_TEMP<= X nand Y;
---end if;
+if(op_code_bits = "0010")then           -- 10-NAND, modify Z
+OUTPUT_ALU_TEMP<= X nand Y;
+end if;
+
 ------------------------------
---end process;
-OUTPUT_ALU <= (X nand Y) when op_code_bits="0010" else OUTPUT_ALU_TEMP2;
+end process;
+OUTPUT_ALU <= OUTPUT_ALU_TEMP;
 end behave;
 
 
