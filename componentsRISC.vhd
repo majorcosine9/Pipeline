@@ -349,9 +349,12 @@ entity priority is
 
 architecture behave_priority of priority is
 begin
+
+signal sum_bits: integer;
+
 process(INPUT)
 begin
-	if (INPUT(0)='1') then OUTPUT <= "000";
+	if    (INPUT(0)='1') then OUTPUT <= "000";
 	elsif (INPUT(1)='1') then OUTPUT <= "001";
 	elsif (INPUT(2)='1') then OUTPUT <= "010";
 	elsif (INPUT(3)='1') then OUTPUT <= "011";
@@ -361,9 +364,11 @@ begin
 	elsif (INPUT(7)='1') then OUTPUT <= "111";
 	else OUTPUT <= "000";
 	end if;
-	if () then valid <= '0';
-	else valid <= '1';
+
+	sum_bits = unsigned(INPUT(0)) + unsigned(INPUT(1)) + unsigned(INPUT(2)) + unsigned(INPUT(3)) + unsigned(INPUT(4)) + unsigned(INPUT(5)) + unsigned(INPUT(6)) + unsigned(INPUT(7)); 
+	if (sum_bits > '1') then valid2 <= '1';   
 	end if;
+
 end process;
 end behave_priority;
 -----------------------------------------------------------
