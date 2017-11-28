@@ -168,7 +168,7 @@ begin  -- behave
 process(clk)
 begin
 if (reset = '1') then
-  dout <= "0000000000000000";
+  dout <= '0';
   else if(clk'event and clk = '1') then
     if en = '1' then
       dout <= din;
@@ -337,13 +337,6 @@ end process;
 end behave_mux8_3;
 -----------------------------------------------------------
 
-
-
-
-
-
-
-
 library std;
 use std.standard.all;
 library ieee;
@@ -354,11 +347,10 @@ entity priority is
 	end priority; 
 
 architecture behave_priority of priority is
+
 begin
-
-signal sum_bits: integer;
-
 process(INPUT)
+variable temp : integer := 0;
 begin
 	if    (INPUT(0)='1') then OUTPUT <= "000";
 	elsif (INPUT(1)='1') then OUTPUT <= "001";
@@ -370,9 +362,14 @@ begin
 	elsif (INPUT(7)='1') then OUTPUT <= "111";
 	else OUTPUT <= "000";
 	end if;
-
-	sum_bits = unsigned(INPUT(0)) + unsigned(INPUT(1)) + unsigned(INPUT(2)) + unsigned(INPUT(3)) + unsigned(INPUT(4)) + unsigned(INPUT(5)) + unsigned(INPUT(6)) + unsigned(INPUT(7)); 
-	if (sum_bits > '1') then valid2 <= '1';   
+ 	for i in INPUT'range loop
+    	if INPUT(i) = '1' then temp := temp + 1; 
+    	end if;
+	end loop;
+	--if ((INPUT(0)) + (INPUT(1)) + (INPUT(2)) + (INPUT(3)) 
+	--	+ (INPUT(4)) + (INPUT(5)) + (INPUT(6)) + (INPUT(7)) > '1') then valid2 <= '1';   
+	--end if;
+	if(temp>=2) then valid2 <= '1';
 	end if;
 
 end process;
