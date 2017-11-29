@@ -6,63 +6,66 @@ use ieee.numeric_std.all;
 use work.componentsRISC.all;
 --------------------------------------------------
 
-entity datapath is 
+entity combined is 
 	port ( 
 		clk : in std_logic;
-		reset: in std_logic;
-
-		PC_en:    in std_logic;
-		IF_ID_en: in std_logic;
-		C_en:  in std_logic;
-		Z_en: in std_logic;
-		RegWrite: in std_logic;
-		PC_mux: in std_logic_vector(1 downto 0);
-		IR_mux: in std_logic_vector(1 downto 0);
-		BALU2_mux: in std_logic;
-		Rf_a2_mux: in std_logic;
-		ALU2_mux: in std_logic_vector(2 downto 0);
-		ALU1_mux: in std_logic_vector(2 downto 0);
-		T1_mux: in std_logic_vector(2 downto 0);
-		T2_mux: in std_logic_vector(2 downto 0);
-		mem_data_in_mux: in std_logic;
-		Rf_d3_mux: in std_logic_vector(1 downto 0);
-		Rf_a3_mux: in std_logic_vector(1 downto 0);
-		MemWrite: in std_logic;
-		
-		--mem_data_output: in std_logic_vector(15 downto 0);
-		
-		carry, zero: out std_logic;
-		valid2: out std_logic;
-		IF_ID_opcode_bits:out std_logic_vector(3 downto 0);
-		cz_bits : out std_logic_vector(1 downto 0);
-		eq_T1_T2 : out std_logic;
-		IF_ID_Rs1, IF_ID_Rs2: out std_logic_vector(2 downto 0);
-		ID_EX_opcode_bits: out std_logic_vector(3 downto 0);
-		ID_EX_valid2: out std_logic;
-		ID_EX_RegWrite: out std_logic;
-		ID_EX_Rd: out std_logic_vector(2 downto 0);
-		EX_MEM_RegWrite: out std_logic;
-		EX_MEM_Rd: out std_logic_vector(2 downto 0);
-		MEM_WB_RegWrite: out std_logic;
-		MEM_WB_Rd: out std_logic_vector(2 downto 0);
-		
-		PC_reg_in,PC_reg_out: out std_logic_vector(15 downto 0));
+		reset: in std_logic);
 end entity;
 
-architecture behave of datapath is
-	signal RF_a2_in,PE_out,ID_EX_RD_out,EX_MEM_RD_out,MEM_WB_RD_out,ID_EX_Rd_in: std_logic_vector(2 downto 0) :="000";
-	signal cz_bits_signal,Rf_d3_mux_signal,ID_EX_Rf_d3_mux_out,EX_MEM_Rf_d3_mux_out: std_logic_vector(1 downto 0):="00";
+architecture behave of combined is
+	signal RF_a2_in,PE_out,ID_EX_RD_out,EX_MEM_RD_out,MEM_WB_RD_out,ID_EX_Rd_in,ALU2_mux,ALU1_mux,T1_mux,T2_mux: std_logic_vector(2 downto 0) :="000";
+	signal Rf_d3_mux,ID_EX_Rf_d3_mux_out,EX_MEM_Rf_d3_mux_out,PC_mux,IR_mux,Rf_a3_mux: std_logic_vector(1 downto 0):="00";
 	signal carry_ALU_out,zero_ALU_out,valid2_signal,ID_EX_valid2_out,ID_EX_RegWrite_out,EX_MEM_RegWrite_out,
-	MEM_WB_RegWrite_out,ID_EX_C_en_out,ID_EX_Z_en_out,ID_EX_mem_mux_out,EX_MEM_mem_mux_out,ID_EX_MemWrite_out,
-	EX_MEM_MemWrite_out,C_en_signal,Z_en_signal,mem_data_in_mux_signal,MemWrite_signal: std_logic:='0';
+			MEM_WB_RegWrite_out,ID_EX_C_en_out,ID_EX_Z_en_out,ID_EX_mem_mux_out,EX_MEM_mem_mux_out,ID_EX_MemWrite_out,
+			EX_MEM_MemWrite_out,C_en,Z_en,mem_data_in_mux,MemWrite,PC_en,IF_ID_en,RegWrite,BALU2_mux,Rf_a2_mux: std_logic:='0';
 	signal ID_EX_ALU1_in,ID_EX_ALU2_in,ID_EX_T1_in,ID_EX_T2_in,ID_EX_IR_out,ID_EX_PC_out,ID_EX_ALU1_out,
-	ID_EX_ALU2_out,ID_EX_T1_out,ID_EX_T2_out,EX_LS7_out,ALU_out,SE10_out,SE7_out,LS7_out,RF_d2_out,RF_d1_out,
-	RF_d3_in,Imem_data_out,Balu_out,Palu_out,PC_in,PC_out,Balu2_mux_out,DMEM_Data_in,DMEM_Data_out,
-	EX_MEM_ALUout,EX_MEM_IR_out,EX_MEM_PC_out,EX_MEM_T1_out,EX_MEM_T2_out,Mem_WB_RF_D3_in,Mem_WB_RF_D3_out,
-	MEM_WB_IR_out,IF_ID_PC_out,IF_ID_IR_out,IF_ID_IR_in,Dec_out: std_logic_vector(15 downto 0):="0000000000000000";
+			ID_EX_ALU2_out,ID_EX_T1_out,ID_EX_T2_out,EX_LS7_out,ALU_out,SE10_out,SE7_out,LS7_out,RF_d2_out,RF_d1_out,
+			RF_d3_in,Imem_data_out,Balu_out,Palu_out,PC_in,PC_out,Balu2_mux_out,DMEM_Data_in,DMEM_Data_out,
+			EX_MEM_ALUout,EX_MEM_IR_out,EX_MEM_PC_out,EX_MEM_T1_out,EX_MEM_T2_out,Mem_WB_RF_D3_in,Mem_WB_RF_D3_out,
+			MEM_WB_IR_out,IF_ID_PC_out,IF_ID_IR_out,IF_ID_IR_in,Dec_out: std_logic_vector(15 downto 0):="0000000000000000";
 	signal MemWrite_bar: std_logic:='1';
 
-	
+	signal carry,zero,eq_T1_T2_signal: std_logic:='0';
+	signal IF_ID_Rs1,IF_ID_Rs2: std_logic_vector(2 downto 0):="000";
+
+	component control_pipe is
+	port(
+	clk: in std_logic;
+	carry, zero: in std_logic;
+	valid2: in std_logic;
+	IF_ID_opcode_bits: in std_logic_vector(3 downto 0);
+	cz_bits : in std_logic_vector(1 downto 0);
+	eq_T1_T2 : in std_logic;
+	reset: in std_logic;
+	IF_ID_Rs1, IF_ID_Rs2: in std_logic_vector(2 downto 0);
+	ID_EX_opcode_bits: in std_logic_vector(3 downto 0);
+	ID_EX_valid2: in std_logic;
+	ID_EX_RegWrite: in std_logic;
+	ID_EX_Rd: in std_logic_vector(2 downto 0);
+	EX_MEM_RegWrite: in std_logic;
+	EX_MEM_Rd: in std_logic_vector(2 downto 0);
+	MEM_WB_RegWrite: in std_logic;
+	MEM_WB_Rd: in std_logic_vector(2 downto 0);
+
+	PC_en: out std_logic;
+	IF_ID_en: out std_logic;
+	C_en: out std_logic;
+	Z_en: out std_logic;
+	RegWrite: out std_logic;
+	PC_mux: out std_logic_vector(1 downto 0);
+	IR_mux: out std_logic_vector(1 downto 0);
+	BALU2_mux: out std_logic;
+	Rf_a2_mux: out std_logic;
+	ALU2_mux: out std_logic_vector(2 downto 0);
+	ALU1_mux: out std_logic_vector(2 downto 0);
+	T1_mux: out std_logic_vector(2 downto 0);
+	T2_mux: out std_logic_vector(2 downto 0);
+	mem_data_in_mux: out std_logic;
+	Rf_d3_mux: out std_logic_vector(1 downto 0);
+	Rf_a3_mux: out std_logic_vector(1 downto 0);
+	MemWrite: out std_logic
+	);
+	end component;
 	
 begin
 
@@ -75,7 +78,7 @@ begin
 		s=> PC_mux,
 		OUTPUT=> PC_in);
 
-	PC: dregister
+	PC: dregister_PC
 	port map(
 		DIN=>PC_in,
 		clk=> clk,
@@ -152,6 +155,8 @@ begin
 		d2=> RF_d2_out,
 		reset=> reset,
 		clk=> clk);
+
+	eq_T1_T2_signal <= '1' when ID_EX_T2_in = ID_EX_T1_in else '0';
 
 	PE: priority   
 	port map (
@@ -307,7 +312,7 @@ begin
 		
 	ID_EX_C_en_flop: dflipflop
 	port map(
-		DIN=> C_en_signal, 
+		DIN=> C_en, 
 		clk=> clk,
 		reset=> reset,
 		en=> '1',
@@ -315,7 +320,7 @@ begin
 
 	ID_EX_Z_en_flop: dflipflop
 	port map(
-		DIN=> Z_en_signal, 
+		DIN=> Z_en, 
 		clk=> clk,
 		reset=> reset,
 		en=> '1',
@@ -324,7 +329,7 @@ begin
 --mem data mux
 	ID_EX_mem_mux_flop: dflipflop
 	port map(
-		DIN=> mem_data_in_mux_signal, 
+		DIN=> mem_data_in_mux, 
 		clk=> clk,
 		reset=> reset,
 		en=> '1',
@@ -332,7 +337,7 @@ begin
 
 	ID_EX_MemWrite_flop: dflipflop
 	port map(
-		DIN=> MemWrite_signal, 
+		DIN=> MemWrite, 
 		clk=> clk,
 		reset=> reset,
 		en=> '1',
@@ -340,7 +345,7 @@ begin
 
 	ID_EX_Rf_d3_mux_flop: dflipflop_2
 	port map(
-		DIN=> Rf_d3_mux_signal, 
+		DIN=> Rf_d3_mux, 
 		clk=> clk,
 		reset=> reset,
 		en=> '1',
@@ -527,26 +532,47 @@ begin
 	
 
 	---------------------------------------------------------------------
-	
+	control: control_pipe
+	port map(
+	clk => clk,
+	carry => carry,
+	zero => zero,
+	valid2 => valid2_signal,
+	IF_ID_opcode_bits => IF_ID_IR_out(15 downto 12),
+	cz_bits => IF_ID_IR_out(1 downto 0),
+	eq_T1_T2 => eq_T1_T2_signal,
+	reset => reset,
+	IF_ID_Rs1 => IF_ID_Rs1,
+	IF_ID_Rs2 => IF_ID_Rs2,
+	ID_EX_opcode_bits => ID_EX_IR_out(15 downto 12),
+	ID_EX_valid2 => ID_EX_valid2_out,
+	ID_EX_RegWrite => ID_EX_RegWrite_out,
+	ID_EX_Rd => ID_EX_Rd_out,
+	EX_MEM_RegWrite => EX_MEM_RegWrite_out,
+	EX_MEM_Rd => EX_MEM_Rd_out,
+	MEM_WB_RegWrite => MEM_WB_RegWrite_out,
+	MEM_WB_Rd => MEM_WB_Rd_out,
 
-	ID_EX_valid2<=ID_EX_valid2_out;
-	valid2<=valid2_signal;
-	eq_T1_T2 <= '1' when ID_EX_T2_in = ID_EX_T1_in else '0';
+	PC_en => PC_en,
+	IF_ID_en => IF_ID_en,
+	C_en => C_en,
+	Z_en => Z_en,
+	RegWrite => RegWrite,
+	PC_mux => PC_mux,
+	IR_mux => IR_mux,
+	BALU2_mux => Balu2_mux,
+	Rf_a2_mux => Rf_a2_mux,
+	ALU2_mux => ALU2_mux,
+	ALU1_mux => ALU1_mux,
+	T1_mux => T1_mux,
+	T2_mux => T2_mux,
+	mem_data_in_mux => mem_data_in_mux,
+	Rf_d3_mux => Rf_d3_mux,
+	Rf_a3_mux => Rf_a3_mux,
+	MemWrite => MemWrite);
+
+
 	IF_ID_Rs1 <= IF_ID_IR_out(11 downto 9);
 	IF_ID_Rs2 <= RF_a2_in;
-	ID_EX_RegWrite <= ID_EX_RegWrite_out;
-	ID_EX_Rd <= ID_EX_Rd_out;
-	EX_MEM_RegWrite <= EX_MEM_RegWrite_out;
-	EX_MEM_Rd <= EX_MEM_Rd_out;
-	MEM_WB_RegWrite <= MEM_WB_RegWrite_out;
-	MEM_WB_Rd <= MEM_WB_Rd_out;
-	Rf_d3_mux_signal <= Rf_d3_mux;
-	MemWrite_signal <= MemWrite;
-	mem_data_in_mux_signal <= mem_data_in_mux;
-	C_en_signal <= C_en;
-	Z_en_signal <= Z_en; 
-		
-		PC_reg_in <= PC_in;
-		PC_reg_out <= PC_out;
 
 end behave;

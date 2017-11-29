@@ -12,10 +12,29 @@ package componentsRISC is
 		  DOUT: out std_logic_vector(15 downto 0));
 	end component;
 	
+	component dregister_PC is --tested
+	port (DIN: in std_logic_vector(15 downto 0); 
+		  clk, en, reset: in std_logic; 
+		  DOUT: out std_logic_vector(15 downto 0));
+	end component;
+	
 	component dflipflop is --tested
 	port (DIN: in std_logic; 
 		  clk, en, reset: in std_logic; 
 		  DOUT: out std_logic);
+	end component;
+	
+	component dflipflop_2 is --tested
+		port (DIN: in std_logic_vector(1 downto 0); 
+			  clk, en, reset: in std_logic; 
+			  DOUT: out std_logic_vector(1 downto 0));
+		end component;
+	
+
+	component dflipflop_3 is --tested
+	port (DIN: in std_logic_vector(2 downto 0); 
+		  clk, en, reset: in std_logic; 
+		  DOUT: out std_logic_vector(2 downto 0));
 	end component;
 	
 	component mux2_16 is --tested
@@ -153,6 +172,37 @@ use std.standard.all;
 library ieee;
 use ieee.std_logic_1164.all;
 
+entity dregister_PC is                  -- no. of bits
+  port (
+    din  : in  std_logic_vector(15 downto 0);
+    dout : out std_logic_vector(15 downto 0);
+    en: in std_logic;
+    reset: in std_logic;
+    clk     : in  std_logic);
+end dregister_PC;
+
+architecture behave of dregister_PC is
+
+begin  -- behave
+process(clk)
+begin
+if(reset = '1') then
+  dout <= "0000000000000001";
+  else if(clk'event and clk = '1') then
+    if en = '1' then
+      dout <= din;
+    end if;
+  end if;
+end if;
+end process;
+end behave;
+-----------------------------------------------------------
+
+library std;
+use std.standard.all;
+library ieee;
+use ieee.std_logic_1164.all;
+
 entity dflipflop is                  -- no. of bits
   port (
     din  : in  std_logic;
@@ -178,6 +228,73 @@ end if;
 end process;
 end behave;
 -----------------------------------------------------------
+-----------------------------------------------------------
+
+library std;
+use std.standard.all;
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity dflipflop_3 is                  -- no. of bits
+  port (
+    din  : in  std_logic_vector(2 downto 0);
+    dout : out std_logic_vector(2 downto 0);
+    en: in std_logic;
+    reset: in std_logic;
+    clk     : in std_logic);
+end dflipflop_3;
+
+architecture behave of dflipflop_3 is
+
+begin  -- behave
+process(clk)
+begin
+if (reset = '1') then
+  dout <= "000";
+  else if(clk'event and clk = '1') then
+    if en = '1' then
+      dout <= din;
+    end if;
+  end if;
+end if;
+end process;
+end behave;
+-----------------------------------------------------------
+
+-----------------------------------------------------------
+-----------------------------------------------------------
+
+library std;
+use std.standard.all;
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity dflipflop_2 is                  -- no. of bits
+  port (
+    din  : in  std_logic_vector(1 downto 0);
+    dout : out std_logic_vector(1 downto 0);
+    en: in std_logic;
+    reset: in std_logic;
+    clk     : in std_logic);
+end dflipflop_2;
+
+architecture behave of dflipflop_2 is
+
+begin  -- behave
+process(clk)
+begin
+if (reset = '1') then
+  dout <= "00";
+  else if(clk'event and clk = '1') then
+    if en = '1' then
+      dout <= din;
+    end if;
+  end if;
+end if;
+end process;
+end behave;
+
+------------------------
 library std;
 use std.standard.all;
 library ieee;
@@ -186,7 +303,7 @@ use ieee.std_logic_1164.all;
 entity mux2_16 is
 	port (IN1,IN0: in std_logic_vector(15 downto 0); s: in std_logic; OUTPUT: out std_logic_vector(15 downto 0));
 end mux2_16;
-
+	
 architecture behave_mux2_16 of mux2_16 is
 begin
 process(s, IN0, IN1)
@@ -369,7 +486,7 @@ begin
 	--if ((INPUT(0)) + (INPUT(1)) + (INPUT(2)) + (INPUT(3)) 
 	--	+ (INPUT(4)) + (INPUT(5)) + (INPUT(6)) + (INPUT(7)) > '1') then valid2 <= '1';   
 	--end if;
-	if(temp>=2) then valid2 <= '1';
+	if(temp>1) then valid2 <= '1';
 	end if;
 
 end process;
@@ -621,8 +738,8 @@ begin
       variable addr_var: integer range 0 to (2**(addr_width-12))-1;
    begin
 	
-	marray(0) <= "0100000010000001"; --LW R0 R2 01H
-   marray(1) <= "1000000000000010";
+	marray(0) <= "0000000001010000"; --LW R0 R2 01H
+   marray(1) <= "0010000000000100";
    marray(2) <= "0000001010011000";
    marray(3) <= "0000000000000100"; --ADD R1 R2 R3
 	
