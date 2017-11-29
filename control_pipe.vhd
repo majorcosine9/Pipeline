@@ -44,7 +44,7 @@ end control_pipe;
 architecture behave of control_pipe is
 type op_code_store is (ADD, ADZ, ADC, ADI, NDU, NDC, NDZ, LHI, LW, SW, LM, SM, BEQ, JAL, JLR, NOP);
 signal IF_ID_opcode, ID_EX_opcode : op_code_store;
-signal FTB: std_logic := '0';
+signal FTB: std_logic := '1';		--default FTB is one , no loop back 
 signal ALU1_muxs, ALU2_muxs, T1_muxs, T2_muxs: std_logic_vector(2 downto 0);
 
 begin
@@ -302,6 +302,10 @@ if(IF_ID_opcode=sw) then
 	Rf_a3_mux <= "00";
 	MemWrite <= '1';
 end if;
+
+if(((ID_EX_opcode = lm) or (ID_EX_opcode = sm)) and (ID_EX_valid2 = '1') ) then
+	FTB <='0';
+	end if;
 
 if(IF_ID_opcode=lm) then
 	PC_en <= not valid2;

@@ -78,7 +78,7 @@ begin
 		s=> PC_mux,
 		OUTPUT=> PC_in);
 
-	PC: dregister_PC
+	PC: dregister
 	port map(
 		DIN=>PC_in,
 		clk=> clk,
