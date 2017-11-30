@@ -110,7 +110,16 @@ package componentsRISC is
 		  OUTPUT1: out std_logic_vector(15 downto 0));
 	end component;
 
-	component memory is --tested
+	component I_memory is --tested
+    generic (data_width: integer:= 16; addr_width: integer := 16);
+    port(din: in std_logic_vector(data_width-1 downto 0);
+        dout: out std_logic_vector(data_width-1 downto 0);
+        rbar: in std_logic;
+        wbar: in std_logic;
+        addrin: in std_logic_vector(addr_width-1 downto 0));
+	end component;
+	
+	component D_memory is --tested
     generic (data_width: integer:= 16; addr_width: integer := 16);
     port(din: in std_logic_vector(data_width-1 downto 0);
         dout: out std_logic_vector(data_width-1 downto 0);
@@ -153,7 +162,7 @@ end dregister;
 architecture behave of dregister is
 
 begin  -- behave
-process(clk)
+process(clk,reset)
 begin
 if(reset = '1') then
   dout <= "0000000000000000";
@@ -215,7 +224,7 @@ end dflipflop;
 architecture behave of dflipflop is
 
 begin  -- behave
-process(clk)
+process(clk,reset)
 begin
 if (reset = '1') then
   dout <= '0';
@@ -247,7 +256,7 @@ end dflipflop_3;
 architecture behave of dflipflop_3 is
 
 begin  -- behave
-process(clk)
+process(clk,reset)
 begin
 if (reset = '1') then
   dout <= "000";
@@ -281,7 +290,7 @@ end dflipflop_2;
 architecture behave of dflipflop_2 is
 
 begin  -- behave
-process(clk)
+process(clk,reset)
 begin
 if (reset = '1') then
   dout <= "00";
@@ -569,14 +578,14 @@ begin
   regFile : process (clk,wr,a1,a2,a3,d3,reset) is
   begin      
 	if (reset='1') then
-		registers(7) <= "0000000000000000";
+		registers(7) <= "1111111111111111";
 		registers(6) <= "0000000000000000";
 		registers(5) <= "0000000000000000";
-		registers(4) <= "0000000000000000";
-		registers(3) <= "0000000000000000";
-		registers(2) <= "0000000000000010";
-		registers(1) <= "0000000000000110";
-		registers(0) <= "0000000000000011";
+		registers(4) <= "0000000000000111";
+		registers(3) <= "0000000000000111";
+		registers(2) <= "0000000000000100";
+		registers(1) <= "0000000000000011";
+		registers(0) <= "0000000000000010";
 	else
 		if (clk'event and clk = '1') then
 			if wr='1' then
@@ -695,7 +704,7 @@ library ieee;
 use ieee.numeric_bit.all;
 use ieee.std_logic_1164.all;
 
-entity memory is
+entity I_memory is
    generic (data_width: integer:= 16; addr_width: integer := 16);
    port(din: in std_logic_vector(data_width-1 downto 0);
         dout: out std_logic_vector(data_width-1 downto 0);
@@ -703,10 +712,10 @@ entity memory is
         wbar: in std_logic;
         addrin: in std_logic_vector(addr_width-1 downto 0));
 end entity;
-architecture behave of memory is
+architecture behave of I_memory is
 constant RAM_DEPTH :integer := 2**addr_width;
-  type memory is array (integer range <>)of std_logic_vector (data_width-1 downto 0);
-  signal marray : memory (0 to RAM_DEPTH-1);
+  type I_memory is array (integer range <>)of std_logic_vector (data_width-1 downto 0);
+  signal marray : I_memory (0 to RAM_DEPTH-1);
    
    function To_Integer(x: bit_vector) return integer is
       variable xu: unsigned(x'range);
@@ -734,14 +743,102 @@ begin
 
 
    --- there is only one state..
-   process(rbar,wbar, addrin, din, marray)
+   process(rbar,wbar, addrin, din)
       variable addr_var: integer range 0 to (2**(addr_width-12))-1;
    begin
 	
-	marray(0) <= "0000000001010000"; --LW R0 R2 01H
-   marray(1) <= "0010000000000100";
+   marray(0) <= "0000001010011000"; --LW R0 R2 01H
+   marray(1) <= "0000011010100000";
+   marray(2) <= "0100000100000001";
+   marray(3) <= "0010000111111000"; --ADD R1 R2 R3
+   marray(4) <= "0000001010011000";
+   marray(5) <= "0000111110101000";
+   marray(6) <= "0000111110101000";
+   marray(7) <= "0000001010011000";
+   marray(8) <= "0000001010011000";
+   marray(9) <= "0000001010011000";
+   marray(10) <= "0000001010011000";
+   marray(11) <= "0000001010011000";
+   marray(12) <= "0000001010011000";
+   marray(13) <= "0000001010011000";
+   marray(14) <= "0000001010011000";	
+   marray(15) <= "0000001010011000";
+	
+      addr_var := To_Integer(to_bit_vector(addrin));
+        if(rbar = '0') then
+          dout <= marray(addr_var);
+        elsif (wbar = '0') then
+          marray(addr_var) <= din;
+	      end if;        
+   end process;
+
+end behave;
+
+-----------------------------------------------------------
+
+library ieee;
+use ieee.numeric_bit.all;
+use ieee.std_logic_1164.all;
+
+entity D_memory is
+   generic (data_width: integer:= 16; addr_width: integer := 16);
+   port(din: in std_logic_vector(data_width-1 downto 0);
+        dout: out std_logic_vector(data_width-1 downto 0);
+        rbar: in std_logic;
+        wbar: in std_logic;
+        addrin: in std_logic_vector(addr_width-1 downto 0));
+end entity;
+architecture behave of D_memory is
+constant RAM_DEPTH :integer := 2**addr_width;
+  type D_memory is array (integer range <>)of std_logic_vector (data_width-1 downto 0);
+  signal marray : D_memory (0 to RAM_DEPTH-1);
+   
+   function To_Integer(x: bit_vector) return integer is
+      variable xu: unsigned(x'range);
+   begin
+      for I in x'range loop
+         xu(I) := x(I);
+      end loop;
+      return(To_Integer(xu));
+   end To_Integer;
+
+   function to_bit_vector(x: std_logic_vector) return bit_vector is
+      variable ret_val: bit_vector(1 to x'length);
+      alias lx: std_logic_vector(1 to x'length) is x;
+   begin
+ 	for I in 1 to x'length loop
+		if(lx(I) = '1') then
+			ret_val(I) := '1';
+		else
+			ret_val(I) := '0';
+		end if;
+	end loop;
+	return(ret_val);
+   end to_bit_vector;
+begin
+
+
+   --- there is only one state..
+   process(rbar,wbar, addrin, din)
+      variable addr_var: integer range 0 to (2**(addr_width-8))-1;
+   begin
+	
+	marray(0) <= "0000000000000100"; --LW R0 R2 01H
+   marray(1) <= "0000001010011000";
    marray(2) <= "0000001010011000";
-   marray(3) <= "0000000000000100"; --ADD R1 R2 R3
+   marray(3) <= "0000001010011000"; --ADD R1 R2 R3
+   marray(4) <= "0000001010011000";
+   marray(5) <= "0000001010011000";
+   marray(6) <= "0000001010011000";
+   marray(7) <= "0000001010011000";
+   marray(8) <= "1000010011100000";
+   marray(9) <= "0000010000100000";
+   marray(10) <= "0000010000000000";
+   marray(11) <= "0000000000000100";
+   marray(12) <= "0000000001000000";
+   marray(13) <= "0000000000000100";
+   marray(14) <= "0000000000000100";	
+   marray(15) <= "0000000000000100";
 	
       addr_var := To_Integer(to_bit_vector(addrin));
         if(rbar = '0') then

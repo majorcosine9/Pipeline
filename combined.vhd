@@ -16,14 +16,21 @@ architecture behave of combined is
 	signal RF_a2_in,PE_out,ID_EX_RD_out,EX_MEM_RD_out,MEM_WB_RD_out,ID_EX_Rd_in,ALU2_mux,ALU1_mux,T1_mux,T2_mux: std_logic_vector(2 downto 0) :="000";
 	signal Rf_d3_mux,ID_EX_Rf_d3_mux_out,EX_MEM_Rf_d3_mux_out,PC_mux,IR_mux,Rf_a3_mux: std_logic_vector(1 downto 0):="00";
 	signal carry_ALU_out,zero_ALU_out,valid2_signal,ID_EX_valid2_out,ID_EX_RegWrite_out,EX_MEM_RegWrite_out,
-			MEM_WB_RegWrite_out,ID_EX_C_en_out,ID_EX_Z_en_out,ID_EX_mem_mux_out,EX_MEM_mem_mux_out,ID_EX_MemWrite_out,
-			EX_MEM_MemWrite_out,C_en,Z_en,mem_data_in_mux,MemWrite,PC_en,IF_ID_en,RegWrite,BALU2_mux,Rf_a2_mux: std_logic:='0';
-	signal ID_EX_ALU1_in,ID_EX_ALU2_in,ID_EX_T1_in,ID_EX_T2_in,ID_EX_IR_out,ID_EX_PC_out,ID_EX_ALU1_out,
-			ID_EX_ALU2_out,ID_EX_T1_out,ID_EX_T2_out,EX_LS7_out,ALU_out,SE10_out,SE7_out,LS7_out,RF_d2_out,RF_d1_out,
-			RF_d3_in,Imem_data_out,Balu_out,Palu_out,PC_in,PC_out,Balu2_mux_out,DMEM_Data_in,DMEM_Data_out,
+			MEM_WB_RegWrite_out,ID_EX_C_en_out,ID_EX_Z_en_out,ID_EX_mem_mux_out,EX_MEM_mem_mux_out,ID_EX_MemWrite_out,ID_EX_MemRead_out,
+			EX_MEM_MemWrite_out,EX_MEM_MemRead_out,C_en,Z_en,mem_data_in_mux,MemWrite,MemRead,PC_en,IF_ID_en,RegWrite,BALU2_mux,Rf_a2_mux: std_logic:='0';
+	signal  Palu_out,PC_in,PC_out,Palu_in,Imem_data_out,
+			IF_ID_PC_out,IF_ID_IR_out,IF_ID_IR_in,
+			ID_EX_ALU1_in,ID_EX_ALU2_in,ID_EX_T1_in,ID_EX_T2_in,
+			ID_EX_ALU1_out,ID_EX_ALU2_out,ID_EX_T1_out,ID_EX_T2_out,  ID_EX_IR_out,ID_EX_PC_out,
+			Balu_out,Balu2_mux_out,
+			SE10_out,SE7_out,LS7_out,
+			RF_d2_out,RF_d1_out,RF_d3_in,
+			ALU_out,EX_LS7_out,DMem_add_in,
+			DMEM_Data_in,DMEM_Data_out,
 			EX_MEM_ALUout,EX_MEM_IR_out,EX_MEM_PC_out,EX_MEM_T1_out,EX_MEM_T2_out,Mem_WB_RF_D3_in,Mem_WB_RF_D3_out,
-			MEM_WB_IR_out,IF_ID_PC_out,IF_ID_IR_out,IF_ID_IR_in,Dec_out: std_logic_vector(15 downto 0):="0000000000000000";
-	signal MemWrite_bar: std_logic:='1';
+			MEM_WB_IR_out,Dec_out
+			: std_logic_vector(15 downto 0):="0000000000000000";
+	signal MemWrite_bar,MemRead_bar: std_logic:='1';
 
 	signal carry,zero,eq_T1_T2_signal: std_logic:='0';
 	signal IF_ID_Rs1,IF_ID_Rs2: std_logic_vector(2 downto 0):="000";
@@ -63,7 +70,8 @@ architecture behave of combined is
 	mem_data_in_mux: out std_logic;
 	Rf_d3_mux: out std_logic_vector(1 downto 0);
 	Rf_a3_mux: out std_logic_vector(1 downto 0);
-	MemWrite: out std_logic
+	MemWrite: out std_logic;
+	MemRead: out std_logic
 	);
 	end component;
 	
@@ -78,7 +86,7 @@ begin
 		s=> PC_mux,
 		OUTPUT=> PC_in);
 
-	PC: dregister_PC
+	PC: dregister
 	port map(
 		DIN=>PC_in,
 		clk=> clk,
@@ -92,7 +100,7 @@ begin
 		D2=>"0000000000000001",
 		OUTPUT=> Palu_out);
 
-	IMEM: memory   
+	IMEM: I_memory   
     generic map (data_width=> 16, addr_width=> 16)
     port map(
     	din=> PC_out,
@@ -326,6 +334,7 @@ begin
 		en=> '1',
 		DOUT=> ID_EX_Z_en_out);
 
+
 --mem data mux
 	ID_EX_mem_mux_flop: dflipflop
 	port map(
@@ -342,6 +351,14 @@ begin
 		reset=> reset,
 		en=> '1',
 		DOUT=> ID_EX_MemWrite_out);
+
+	ID_EX_MemRead_flop: dflipflop
+	port map(
+		DIN=> MemRead, 
+		clk=> clk,
+		reset=> reset,
+		en=> '1',
+		DOUT=> ID_EX_MemRead_out);
 
 	ID_EX_Rf_d3_mux_flop: dflipflop_2
 	port map(
@@ -462,6 +479,14 @@ begin
 		en=> '1',
 		DOUT=> EX_MEM_MemWrite_out);
 
+	Ex_Mem_MemRead_flop: dflipflop
+	port map(
+		DIN=> ID_EX_MemRead_out, 
+		clk=> clk,
+		reset=> reset,
+		en=> '1',
+		DOUT=> EX_MEM_MemRead_out);
+
 	EX_Mem_Rf_d3_mux_flop: dflipflop_2
 	port map(
 		DIN=> ID_EX_Rf_d3_mux_out, 
@@ -479,15 +504,24 @@ begin
 		OUTPUT=> DMEM_Data_in);
 
 	MemWrite_bar<= (not EX_MEM_MemWrite_out);
+	MemRead_bar<= (not EX_MEM_MemRead_out);
 
-	DMEM: memory   
+
+	DMEM_Ain_mux: mux2_16 
+	port map (
+		IN1=> EX_MEM_ALUout,
+		IN0=> "0000000000000000", 
+		s=> EX_MEM_MemRead_out,
+		OUTPUT=> DMEM_add_in);	
+
+	DMEM: D_memory   
     generic map (data_width=> 16, addr_width=> 16)
     port map(
     	din=> DMEM_Data_in,
         dout=> DMEM_Data_out,
-        rbar=> '0',
+        rbar=> MemRead_bar,
         wbar=> MemWrite_bar,
-        addrin=> EX_MEM_ALUout);
+        addrin=> DMEM_add_in);
 
     LS7: LeftShift
 	port map(
@@ -569,7 +603,8 @@ begin
 	mem_data_in_mux => mem_data_in_mux,
 	Rf_d3_mux => Rf_d3_mux,
 	Rf_a3_mux => Rf_a3_mux,
-	MemWrite => MemWrite);
+	MemWrite => MemWrite,
+	MemRead => MemRead);
 
 
 	IF_ID_Rs1 <= IF_ID_IR_out(11 downto 9);

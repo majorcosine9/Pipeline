@@ -28,6 +28,7 @@ entity datapath is
 		Rf_d3_mux: in std_logic_vector(1 downto 0);
 		Rf_a3_mux: in std_logic_vector(1 downto 0);
 		MemWrite: in std_logic;
+		MemRead: in std_logic;
 		
 		--mem_data_output: in std_logic_vector(15 downto 0);
 		
@@ -44,23 +45,21 @@ entity datapath is
 		EX_MEM_RegWrite: out std_logic;
 		EX_MEM_Rd: out std_logic_vector(2 downto 0);
 		MEM_WB_RegWrite: out std_logic;
-		MEM_WB_Rd: out std_logic_vector(2 downto 0);
-		
-		PC_reg_in,PC_reg_out: out std_logic_vector(15 downto 0));
+		MEM_WB_Rd: out std_logic_vector(2 downto 0));
 end entity;
 
 architecture behave of datapath is
 	signal RF_a2_in,PE_out,ID_EX_RD_out,EX_MEM_RD_out,MEM_WB_RD_out,ID_EX_Rd_in: std_logic_vector(2 downto 0) :="000";
 	signal cz_bits_signal,Rf_d3_mux_signal,ID_EX_Rf_d3_mux_out,EX_MEM_Rf_d3_mux_out: std_logic_vector(1 downto 0):="00";
 	signal carry_ALU_out,zero_ALU_out,valid2_signal,ID_EX_valid2_out,ID_EX_RegWrite_out,EX_MEM_RegWrite_out,
-	MEM_WB_RegWrite_out,ID_EX_C_en_out,ID_EX_Z_en_out,ID_EX_mem_mux_out,EX_MEM_mem_mux_out,ID_EX_MemWrite_out,
-	EX_MEM_MemWrite_out,C_en_signal,Z_en_signal,mem_data_in_mux_signal,MemWrite_signal: std_logic:='0';
+	MEM_WB_RegWrite_out,ID_EX_C_en_out,ID_EX_Z_en_out,ID_EX_mem_mux_out,EX_MEM_mem_mux_out,ID_EX_MemWrite_out,ID_EX_MemRead_out,
+	EX_MEM_MemWrite_out,EX_MEM_MemRead_out,C_en_signal,Z_en_signal,mem_data_in_mux_signal,MemWrite_signal,MemRead_signal: std_logic:='0';
 	signal ID_EX_ALU1_in,ID_EX_ALU2_in,ID_EX_T1_in,ID_EX_T2_in,ID_EX_IR_out,ID_EX_PC_out,ID_EX_ALU1_out,
 	ID_EX_ALU2_out,ID_EX_T1_out,ID_EX_T2_out,EX_LS7_out,ALU_out,SE10_out,SE7_out,LS7_out,RF_d2_out,RF_d1_out,
 	RF_d3_in,Imem_data_out,Balu_out,Palu_out,PC_in,PC_out,Balu2_mux_out,DMEM_Data_in,DMEM_Data_out,
 	EX_MEM_ALUout,EX_MEM_IR_out,EX_MEM_PC_out,EX_MEM_T1_out,EX_MEM_T2_out,Mem_WB_RF_D3_in,Mem_WB_RF_D3_out,
-	MEM_WB_IR_out,IF_ID_PC_out,IF_ID_IR_out,IF_ID_IR_in,Dec_out: std_logic_vector(15 downto 0):="0000000000000000";
-	signal MemWrite_bar: std_logic:='1';
+	MEM_WB_IR_out,IF_ID_PC_out,IF_ID_IR_out,IF_ID_IR_in,Dec_out,DMEM_add_in: std_logic_vector(15 downto 0):="0000000000000000";
+	signal MemWrite_bar,MemRead_bar: std_logic:='1';
 
 	
 	
@@ -338,6 +337,14 @@ begin
 		en=> '1',
 		DOUT=> ID_EX_MemWrite_out);
 
+	ID_EX_MemRead_flop: dflipflop
+	port map(
+		DIN=> MemRead_signal, 
+		clk=> clk,
+		reset=> reset,
+		en=> '1',
+		DOUT=> ID_EX_MemRead_out);
+
 	ID_EX_Rf_d3_mux_flop: dflipflop_2
 	port map(
 		DIN=> Rf_d3_mux_signal, 
@@ -457,6 +464,14 @@ begin
 		en=> '1',
 		DOUT=> EX_MEM_MemWrite_out);
 
+	Ex_Mem_MemRead_flop: dflipflop
+	port map(
+		DIN=> ID_EX_MemRead_out, 
+		clk=> clk,
+		reset=> reset,
+		en=> '1',
+		DOUT=> EX_MEM_MemRead_out);
+
 	EX_Mem_Rf_d3_mux_flop: dflipflop_2
 	port map(
 		DIN=> ID_EX_Rf_d3_mux_out, 
@@ -475,14 +490,23 @@ begin
 
 	MemWrite_bar<= (not EX_MEM_MemWrite_out);
 
+	MemRead_bar<= (not EX_MEM_MemRead_out);
+
+	DMEM_Ain_mux: mux2_16 
+	port map (
+		IN1=> EX_MEM_ALUout,
+		IN0=> "0000000000000000", 
+		s=> EX_MEM_MemRead_out,
+		OUTPUT=> DMEM_add_in);	
+
 	DMEM: memory   
     generic map (data_width=> 16, addr_width=> 16)
     port map(
     	din=> DMEM_Data_in,
         dout=> DMEM_Data_out,
-        rbar=> '0',
+        rbar=> MemRead_bar,
         wbar=> MemWrite_bar,
-        addrin=> EX_MEM_ALUout);
+        addrin=> DMEM_add_in);
 
     LS7: LeftShift
 	port map(
@@ -528,7 +552,7 @@ begin
 
 	---------------------------------------------------------------------
 	
-
+	--outputs
 	ID_EX_valid2<=ID_EX_valid2_out;
 	valid2<=valid2_signal;
 	eq_T1_T2 <= '1' when ID_EX_T2_in = ID_EX_T1_in else '0';
@@ -542,11 +566,10 @@ begin
 	MEM_WB_Rd <= MEM_WB_Rd_out;
 	Rf_d3_mux_signal <= Rf_d3_mux;
 	MemWrite_signal <= MemWrite;
+	MemRead_signal <= MemRead;
 	mem_data_in_mux_signal <= mem_data_in_mux;
 	C_en_signal <= C_en;
 	Z_en_signal <= Z_en; 
-		
-		PC_reg_in <= PC_in;
-		PC_reg_out <= PC_out;
+
 
 end behave;
