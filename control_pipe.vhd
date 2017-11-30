@@ -349,7 +349,13 @@ if(IF_ID_opcode=sw) then
 	MemRead <='0';
 end if;
 
+<<<<<<< HEAD
 
+=======
+if(((ID_EX_opcode = lm) or (ID_EX_opcode = sm)) and (ID_EX_valid2 = '1') ) then
+	FTB <='0';
+	end if;
+>>>>>>> 458e32f7068b48e971c29ceb7eb01246a72dda37
 
 if(IF_ID_opcode=lm) then
 	PC_en <= not valid2;
